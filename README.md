@@ -7,7 +7,7 @@
   <blockquote>
     If there was an observer on Mars, they would probably be amazed that we have
     survived this long.
-
+   <br />
    <footer>-Noam Chomsky, <cite>Earth</cite></footer>
 
   </blockquote>

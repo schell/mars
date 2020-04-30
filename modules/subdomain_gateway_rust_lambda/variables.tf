@@ -37,6 +37,12 @@ variable "zone_id" {
 }
 
 
+variable "domain_cert" {
+  type = aws_acm_certificate
+  description = "The AWS ACM certificate of your domain"
+}
+
+
 variable "subdomain" {
   type = string
   description = "Name of the subdomain"

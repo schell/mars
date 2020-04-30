@@ -1,5 +1,5 @@
 provider "aws" {
-  region = "us-west-2"
+  region = var.region
 }
 
 
@@ -9,18 +9,9 @@ provider "aws" {
 }
 
 
-terraform {
-  backend "s3" {
-    bucket = "ad-to-bag-terraform"
-    key    = "ad-to-bag"
-    region = "us-west-2"
-  }
-}
-
-
 # ROLES & POLICIES
 
-resource "aws_iam_role" "cache_to_bag" {
+resource "aws_iam_role" "mars_subdomain_gateway_rust_lambda" {
   assume_role_policy = <<EOF
 {
   "Version": "2012-10-17",
@@ -38,8 +29,8 @@ EOF
 }
 
 
-resource "aws_iam_policy" "cache_to_bag" {
-  name        = "iam_policy_for_cache_to_bag"
+resource "aws_iam_policy" "mars_subdomain_gateway_rust_lambda" {
+  name        = "iam_policy_for_${var.api_name}"
   path        = "/"
   description = "IAM policy for CacheToBag's lambda"
 
@@ -63,24 +54,24 @@ EOF
 }
 
 
-resource "aws_iam_role_policy_attachment" "cache_to_bag" {
-  role       = aws_iam_role.cache_to_bag.name
-  policy_arn = aws_iam_policy.cache_to_bag.arn
+resource "aws_iam_role_policy_attachment" "mars_subdomain_gateway_rust_lambda" {
+  role       = aws_iam_role.mars_subdomain_gateway_rust_lambda.name
+  policy_arn = aws_iam_policy.mars_subdomain_gateway_rust_lambda.arn
 }
 
 
 # The lambda itself
-resource "aws_lambda_function" "cache_to_bag" {
-  filename      = "cache_to_bag.zip"
+resource "aws_lambda_function" "mars_subdomain_gateway_rust_lambda" {
+  filename      = var.lambda_bin_zipfile
   handler       = "cache-to-bag"
-  function_name = "cache-to-bag"
+  function_name = var.lambda_function_name
   runtime       = "provided"
   timeout       = 30
   memory_size   = 1024
-  role          = aws_iam_role.cache_to_bag.arn
+  role          = aws_iam_role.mars_subdomain_gateway_rust_lambda.arn
   publish       = true
 
-  source_code_hash = filebase64sha256("cache_to_bag.zip")
+  source_code_hash = filebase64sha256(var.lambda_bin_zipfile)
 
   environment {
     variables = {
@@ -89,100 +80,101 @@ resource "aws_lambda_function" "cache_to_bag" {
   }
 
   depends_on = [
-    aws_iam_role_policy_attachment.cache_to_bag
+    aws_iam_role_policy_attachment.mars_subdomain_gateway_rust_lambda
   ]
 }
 
 
 # GATEWAY API STUFF
-resource "aws_api_gateway_rest_api" "cache_to_bag" {
-  name        = "cache_to_bag"
-  description = "CacheToBag's API Gateway"
+resource "aws_api_gateway_rest_api" "mars_subdomain_gateway_rust_lambda" {
+  name        = var.api_name
+  description = "${var.display_name}'s API Gateway"
 }
 
 
-resource "aws_api_gateway_resource" "cache_to_bag" {
-  rest_api_id = aws_api_gateway_rest_api.cache_to_bag.id
-  parent_id   = aws_api_gateway_rest_api.cache_to_bag.root_resource_id
+resource "aws_api_gateway_resource" "mars_subdomain_gateway_rust_lambda" {
+  rest_api_id = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  parent_id   = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.root_resource_id
   path_part   = "{proxy+}"
 }
 
 
-resource "aws_api_gateway_method" "cache_to_bag_root" {
-  rest_api_id   = aws_api_gateway_rest_api.cache_to_bag.id
-  resource_id   = aws_api_gateway_rest_api.cache_to_bag.root_resource_id
+resource "aws_api_gateway_method" "mars_subdomain_gateway_rust_lambda_root" {
+  rest_api_id   = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  resource_id   = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.root_resource_id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
 
-resource "aws_api_gateway_method" "cache_to_bag_path" {
-  rest_api_id   = aws_api_gateway_rest_api.cache_to_bag.id
-  resource_id   = aws_api_gateway_resource.cache_to_bag.id
+resource "aws_api_gateway_method" "mars_subdomain_gateway_rust_lambda_path" {
+  rest_api_id   = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  resource_id   = aws_api_gateway_resource.mars_subdomain_gateway_rust_lambda.id
   http_method   = "ANY"
   authorization = "NONE"
 }
 
 
-resource "aws_api_gateway_integration" "cache_to_bag_path" {
-  rest_api_id = aws_api_gateway_rest_api.cache_to_bag.id
-  resource_id = aws_api_gateway_method.cache_to_bag_path.resource_id
-  http_method = aws_api_gateway_method.cache_to_bag_path.http_method
+resource "aws_api_gateway_integration" "mars_subdomain_gateway_rust_lambda_path" {
+  rest_api_id = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  resource_id = aws_api_gateway_method.mars_subdomain_gateway_rust_lambda_path.resource_id
+  http_method = aws_api_gateway_method.mars_subdomain_gateway_rust_lambda_path.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.cache_to_bag.invoke_arn
+  uri                     = aws_lambda_function.mars_subdomain_gateway_rust_lambda.invoke_arn
 }
 
 
-resource "aws_api_gateway_integration" "cache_to_bag_root" {
-  rest_api_id = aws_api_gateway_rest_api.cache_to_bag.id
-  resource_id = aws_api_gateway_method.cache_to_bag_root.resource_id
-  http_method = aws_api_gateway_method.cache_to_bag_root.http_method
+resource "aws_api_gateway_integration" "mars_subdomain_gateway_rust_lambda_root" {
+  rest_api_id = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  resource_id = aws_api_gateway_method.mars_subdomain_gateway_rust_lambda_root.resource_id
+  http_method = aws_api_gateway_method.mars_subdomain_gateway_rust_lambda_root.http_method
 
   integration_http_method = "POST"
   type                    = "AWS_PROXY"
-  uri                     = aws_lambda_function.cache_to_bag.invoke_arn
+  uri                     = aws_lambda_function.mars_subdomain_gateway_rust_lambda.invoke_arn
 }
 
 
-resource "aws_api_gateway_deployment" "cache_to_bag" {
+resource "aws_api_gateway_deployment" "mars_subdomain_gateway_rust_lambda" {
   depends_on = [
-    aws_api_gateway_integration.cache_to_bag_root,
-    aws_api_gateway_integration.cache_to_bag_path
+    aws_api_gateway_integration.mars_subdomain_gateway_rust_lambda_root,
+    aws_api_gateway_integration.mars_subdomain_gateway_rust_lambda_path
   ]
 
-  rest_api_id = aws_api_gateway_rest_api.cache_to_bag.id
-  stage_name  = "test_cache_to_bag"
+  rest_api_id = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  stage_name  = "test_${var.api_name}"
 }
 
 
-resource "aws_lambda_permission" "cache_to_bag" {
+resource "aws_lambda_permission" "mars_subdomain_gateway_rust_lambda" {
   statement_id  = "AllowAPIGatewayInvoke"
   action        = "lambda:InvokeFunction"
-  function_name = aws_lambda_function.cache_to_bag.function_name
+  function_name = aws_lambda_function.mars_subdomain_gateway_rust_lambda.function_name
   principal     = "apigateway.amazonaws.com"
 
   # The "/*/*" portion grants access from any method on any resource
   # within the API Gateway REST API.
-  source_arn = "${aws_api_gateway_rest_api.cache_to_bag.execution_arn}/*/*"
+  source_arn = "${aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.execution_arn}/*/*"
 }
 
 
-output "invoke_url" {
-  value = aws_api_gateway_deployment.cache_to_bag.invoke_url
+locals {
+  domain_name = replace(data.aws_route53_zone.zone.name, "/[.]$/", "")
+  sub_domain_name = replace("${var.subdomain}.${data.aws_route53_zone.zone.name}", "/[.]$/", "")
 }
-
 
 # ssl & route53 record stuff
+# TODO: Move domain cert into its own module
 resource "aws_acm_certificate" "cert" {
   provider = aws.virginia
   validation_method = "DNS"
-  domain_name = "weerred.com"
-  subject_alternative_names = ["*.weerred.com"]
+  domain_name = local.domain_name
+  subject_alternative_names = ["*.${local.domain_name}"]
   tags = {
-    Name = "cache_to_bag_api_cert"
-    Domain = "weerred.com"
+    Name = "mars_subdomain_gateway_rust_lambda_api_cert"
+    Domain = local.domain_name
   }
   lifecycle {
     create_before_destroy = true
@@ -217,36 +209,31 @@ resource "aws_acm_certificate_validation" "cert_validation" {
 # domains
 data "aws_route53_zone" "zone" {
   provider = aws.virginia
-  zone_id = "Z22V5I5R2Z8871"
+  zone_id = var.zone_id
 }
 
 
-resource "aws_api_gateway_domain_name" "crisp" {
+resource "aws_api_gateway_domain_name" "subdomain" {
   certificate_arn = aws_acm_certificate_validation.cert_validation.certificate_arn
-  domain_name     = replace("crisp.${data.aws_route53_zone.zone.name}", "/[.]$/", "")
+  domain_name     = local.sub_domain_name
 }
 
 
 resource "aws_api_gateway_base_path_mapping" "base_path_mapping" {
-  api_id      = aws_api_gateway_rest_api.cache_to_bag.id
-  domain_name = aws_api_gateway_domain_name.crisp.domain_name
-  stage_name  = "test_cache_to_bag"
+  api_id      = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
+  domain_name = aws_api_gateway_domain_name.subdomain.domain_name
+  stage_name  = "test_mars_subdomain_gateway_rust_lambda"
 }
 
 
-resource "aws_route53_record" "alias_deployment" {
-  name    = "crisp.${data.aws_route53_zone.zone.name}"
+resource "aws_route53_record" "subdomain" {
+  name    = "${var.subdomain}.${data.aws_route53_zone.zone.name}"
   zone_id = data.aws_route53_zone.zone.zone_id
   type    = "A"
 
   alias {
     evaluate_target_health = true
-    name                   = aws_api_gateway_domain_name.crisp.cloudfront_domain_name
-    zone_id                = aws_api_gateway_domain_name.crisp.cloudfront_zone_id
+    name                   = aws_api_gateway_domain_name.subdomain.cloudfront_domain_name
+    zone_id                = aws_api_gateway_domain_name.subdomain.cloudfront_zone_id
   }
-}
-
-
-output "api_url" {
-  value = aws_api_gateway_domain_name.crisp.cloudfront_domain_name
 }

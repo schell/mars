@@ -3,13 +3,14 @@
     <img src="mars.png" /><br />
     The Mars Modules
   </h1>
-  <span color="grey">
+  
+  <blockquote>
     If there was an observer on Mars, they would probably be amazed that we have
     survived this long.
 
-   <small>Noam Chomsky</small>
+   <footer>-Noam Chomsky, <cite>Earth</cite></footer>
 
-  </span>
+  </blockquote>
 </div>
 
 

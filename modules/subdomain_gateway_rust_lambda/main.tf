@@ -63,7 +63,7 @@ resource "aws_iam_role_policy_attachment" "mars_subdomain_gateway_rust_lambda" {
 # The lambda itself
 resource "aws_lambda_function" "mars_subdomain_gateway_rust_lambda" {
   filename      = var.lambda_bin_zipfile
-  handler       = "cache-to-bag"
+  handler       = var.lambda_function_name
   function_name = var.lambda_function_name
   runtime       = "provided"
   timeout       = 30

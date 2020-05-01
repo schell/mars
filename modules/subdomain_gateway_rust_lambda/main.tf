@@ -144,7 +144,7 @@ resource "aws_api_gateway_deployment" "mars_subdomain_gateway_rust_lambda" {
   ]
 
   rest_api_id = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
-  stage_name  = "test_${var.api_name}"
+  stage_name  = var.api_name
 }
 
 
@@ -174,7 +174,7 @@ locals {
 # ssl & route53 record stuff
 # domains
 resource "aws_api_gateway_domain_name" "subdomain" {
-  certificate_arn = var.certificate_arn #aws_acm_certificate_validation.cert_validation.certificate_arn
+  certificate_arn = var.certificate_arn
   domain_name     = local.sub_domain_name
 }
 

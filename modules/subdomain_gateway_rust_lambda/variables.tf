@@ -1,3 +1,9 @@
+variable "zone_id" {
+  type = string
+  description = "Id of the zone that holds the domain"
+}
+
+
 variable "region" {
   type = string
   description = "The default AWS region"
@@ -28,12 +34,6 @@ variable "lambda_bin_zipfile" {
 variable "lambda_function_name" {
   type = string
   description = "The name of the lambda function"
-}
-
-
-variable "zone_id" {
-  type = string
-  description = "Id of the zone that holds the domain"
 }
 
 

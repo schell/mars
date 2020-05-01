@@ -182,7 +182,7 @@ resource "aws_api_gateway_domain_name" "subdomain" {
 resource "aws_api_gateway_base_path_mapping" "base_path_mapping" {
   api_id      = aws_api_gateway_rest_api.mars_subdomain_gateway_rust_lambda.id
   domain_name = aws_api_gateway_domain_name.subdomain.domain_name
-  stage_name  = "mars_${var.subdomain}_gateway_lambda"
+  stage_name  = var.api_name
 }
 
 

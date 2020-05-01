@@ -160,45 +160,21 @@ resource "aws_lambda_permission" "mars_subdomain_gateway_rust_lambda" {
 }
 
 
-locals {
-  domain_name = replace(data.aws_route53_zone.zone.name, "/[.]$/", "")
-  sub_domain_name = replace("${var.subdomain}.${data.aws_route53_zone.zone.name}", "/[.]$/", "")
-}
-
-# ssl & route53 record stuff
-resource "aws_route53_record" "cert_validation" {
-  provider = aws.virginia
-  zone_id = data.aws_route53_zone.zone.id
-
-  name = var.domain_cert.domain_validation_options.0.resource_record_name
-  type = var.domain_cert.domain_validation_options.0.resource_record_type
-  records = [var.domain_cert.domain_validation_options.0.resource_record_value]
-  ttl = 60
-}
-
-
-# domains
 data "aws_route53_zone" "zone" {
   provider = aws.virginia
   zone_id = var.zone_id
 }
 
 
-resource "aws_acm_certificate_validation" "cert_validation" {
-  provider                = aws.virginia
-  certificate_arn         = var.domain_cert.arn
-  validation_record_fqdns = aws_route53_record.cert_validation.*.fqdn
-  timeouts {
-    create = "60m"
-  }
-  lifecycle {
-    ignore_changes = [id]
-  }
+locals {
+  domain_name = replace(data.aws_route53_zone.zone.name, "/[.]$/", "")
+  sub_domain_name = replace("${var.subdomain}.${data.aws_route53_zone.zone.name}", "/[.]$/", "")
 }
 
-
+# ssl & route53 record stuff
+# domains
 resource "aws_api_gateway_domain_name" "subdomain" {
-  certificate_arn = aws_acm_certificate_validation.cert_validation.certificate_arn
+  certificate_arn = var.certificate_arn #aws_acm_certificate_validation.cert_validation.certificate_arn
   domain_name     = local.sub_domain_name
 }
 

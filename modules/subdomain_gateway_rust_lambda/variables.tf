@@ -37,9 +37,9 @@ variable "zone_id" {
 }
 
 
-variable "domain_cert" {
-  type = aws_acm_certificate
-  description = "The AWS ACM certificate of your domain"
+variable "certificate_arn" {
+  type = string
+  description = "The AWS ACM certificate ARN of your domain"
 }
 
 

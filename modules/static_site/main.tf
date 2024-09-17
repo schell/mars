@@ -78,7 +78,7 @@ resource "aws_acm_certificate_validation" "cert_validation" {
   validation_record_fqdns = [for record in aws_route53_record.cert_validation : record.fqdn]
 
   timeouts {
-    create = "60m"
+    create = var.cert_validation_timeout
   }
   lifecycle {
     ignore_changes = [id]

@@ -14,8 +14,10 @@
 </div>
 
 ## what
-These are a collection of my terraform modules. Most are about doing AWS things
-with Rust. Hence the red planet. Ferris lives there.
+These were a collection of my terraform modules. Most are about doing AWS things
+with Rust. 
+
+I've since stopped using terraform, and have moved to my own IaC solution, [teleform](https://github.com/schell/teleform).
 
 ## why
 Why not?
